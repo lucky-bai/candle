@@ -1,4 +1,4 @@
-use candle_wasm_example_whisper::worker::{Decoder as D, ModelData};
+use candle_wasm_moshi_asr::worker::{Decoder as D, ModelData};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]

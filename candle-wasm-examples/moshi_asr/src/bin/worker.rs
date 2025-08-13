@@ -1,4 +1,4 @@
 use yew_agent::PublicWorker;
 fn main() {
-    candle_wasm_example_whisper::Worker::register();
+    candle_wasm_moshi_asr::Worker::register();
 }
