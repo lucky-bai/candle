@@ -22,7 +22,7 @@ class Whisper {
       weightsURL,
       modelID,
       tokenizerURL,
-      mel_filtersURL,
+      mimiURL,
       configURL,
       quantized,
       is_multilingual,
@@ -35,22 +35,18 @@ class Whisper {
       await init();
 
       self.postMessage({ status: "loading", message: "Loading Model" });
-      const [
-        weightsArrayU8,
-        tokenizerArrayU8,
-        mel_filtersArrayU8,
-        configArrayU8,
-      ] = await Promise.all([
-        fetchArrayBuffer(weightsURL),
-        fetchArrayBuffer(tokenizerURL),
-        fetchArrayBuffer(mel_filtersURL),
-        fetchArrayBuffer(configURL),
-      ]);
+      const [weightsArrayU8, tokenizerArrayU8, mimiArrayU8, configArrayU8] =
+        await Promise.all([
+          fetchArrayBuffer(weightsURL),
+          fetchArrayBuffer(tokenizerURL),
+          fetchArrayBuffer(mimiURL),
+          fetchArrayBuffer(configURL),
+        ]);
 
       this.instance[modelID] = new Decoder(
         weightsArrayU8,
         tokenizerArrayU8,
-        mel_filtersArrayU8,
+        mimiArrayU8,
         configArrayU8,
         quantized,
         is_multilingual,
@@ -66,14 +62,8 @@ class Whisper {
 }
 
 self.addEventListener("message", async (event) => {
-  const {
-    weightsURL,
-    modelID,
-    tokenizerURL,
-    configURL,
-    mel_filtersURL,
-    audioURL,
-  } = event.data;
+  const { weightsURL, modelID, tokenizerURL, configURL, mimiURL, audioURL } =
+    event.data;
   try {
     self.postMessage({ status: "decoding", message: "Starting Decoder" });
     let quantized = false;
@@ -89,7 +79,7 @@ self.addEventListener("message", async (event) => {
       weightsURL,
       modelID,
       tokenizerURL,
-      mel_filtersURL,
+      mimiURL,
       configURL,
       quantized,
       is_multilingual,

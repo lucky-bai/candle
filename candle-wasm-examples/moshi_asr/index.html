@@ -1,7 +1,7 @@
 <html>
   <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
-    <title>Candle Whisper Rust/WASM</title>
+    <title>Candle Moshi ASR</title>
   </head>
   <body></body>
 </html>
@@ -34,43 +34,6 @@
             config: "config.json",
             size: "2.3 GB",
           },
-          tiny_multilingual: {
-            base_url: "https://huggingface.co/openai/whisper-tiny/resolve/main/",
-            model: "model.safetensors",
-            tokenizer: "tokenizer.json",
-            config: "config.json",
-            size: "151 MB",
-          },
-          tiny_en: {
-            base_url:
-              "https://huggingface.co/openai/whisper-tiny.en/resolve/main/",
-            model: "model.safetensors",
-            tokenizer: "tokenizer.json",
-            config: "config.json",
-            size: "151 MB",
-          },
-          tiny_quantized_multilingual_q80: {
-            base_url: "https://huggingface.co/lmz/candle-whisper/resolve/main/",
-            model: "model-tiny-q80.gguf",
-            tokenizer: "tokenizer-tiny.json",
-            config: "config-tiny.json",
-            size: "41.5 MB",
-          },
-          tiny_en_quantized_q80: {
-            base_url: "https://huggingface.co/lmz/candle-whisper/resolve/main/",
-            model: "model-tiny-q80.gguf",
-            tokenizer: "tokenizer-tiny-en.json",
-            config: "config-tiny-en.json",
-            size: "41.8 MB",
-          },
-          distil_medium_en: {
-            base_url:
-              "https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/",
-            model: "model.safetensors",
-            tokenizer: "tokenizer.json",
-            config: "config.json",
-            size: "789 MB",
-          },
         };
 
       const modelEl = document.querySelector("#model");
@@ -82,26 +45,26 @@
         option.textContent = `${modelID} (${model.size})`;
         modelEl.appendChild(option);
       });
-      const whisperWorker = new Worker("./whisperWorker.js", {
+      const moshiWorker = new Worker("./moshiWorker.js", {
         type: "module",
       });
 
-      async function classifyAudio(
-        weightsURL, // URL to the weights file
-        modelID, // model ID
-        tokenizerURL, // URL to the tokenizer file
-        configURL, // model config URL
-        mel_filtersURL, // URL to the mel filters file
-        audioURL, // URL to the audio file
-        updateStatus // function to update the status
+      async function transcribeAudio(
+        weightsURL,
+        modelID,
+        mimiURL,
+        tokenizerURL,
+        configURL,
+        audioURL,
+        updateStatus
       ) {
         return new Promise((resolve, reject) => {
-          whisperWorker.postMessage({
+          moshiWorker.postMessage({
             weightsURL,
             modelID,
+            mimiURL,
             tokenizerURL,
             configURL,
-            mel_filtersURL,
             audioURL,
           });
           function messageHandler(event) {
@@ -110,15 +73,15 @@
               updateStatus(event.data);
             }
             if ("error" in event.data) {
-              whisperWorker.removeEventListener("message", messageHandler);
+              moshiWorker.removeEventListener("message", messageHandler);
               reject(new Error(event.data.error));
             }
             if (event.data.status === "complete") {
-              whisperWorker.removeEventListener("message", messageHandler);
+              moshiWorker.removeEventListener("message", messageHandler);
               resolve(event.data);
             }
           }
-          whisperWorker.addEventListener("message", messageHandler);
+          moshiWorker.addEventListener("message", messageHandler);
         });
       }
 
@@ -183,15 +146,16 @@
         const modelID = modelEl.value;
         const model = MODELS[modelID];
         const modelURL = model.base_url + model.model;
+        const mimiURL = model.base_url + model.mimi;
         const tokenizerURL = model.base_url + model.tokenizer;
         const configURL = model.base_url + model.config;
 
-        classifyAudio(
+        transcribeAudio(
           modelURL,
           modelID,
+          mimiURL,
           tokenizerURL,
           configURL,
-          "mel_filters.safetensors",
           audioURL,
           updateStatus
         )
@@ -226,7 +190,7 @@
     <main class="grid grid-cols-1 gap-8 relative">
       <span class="absolute text-5xl -ml-[1em]"> 🕯️ </span>
       <div>
-        <h1 class="text-5xl font-bold">Candle Whisper</h1>
+        <h1 class="text-5xl font-bold">Candle Moshi ASR</h1>
         <h2 class="text-2xl font-bold">Rust/WASM Demo</h2>
         <p class="max-w-lg">
           Transcribe audio in the browser using rust/wasm with an audio file.
@@ -235,7 +199,7 @@
             href="https://huggingface.co/openai/"
             target="_blank"
             class="underline hover:text-blue-500 hover:no-underline">
-            OpenAI Whisper models
+            Moshi ASR models
           </a>
           and WASM runtime built with
           <a
