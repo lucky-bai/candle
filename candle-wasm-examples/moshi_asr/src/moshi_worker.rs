@@ -1,6 +1,7 @@
 use anyhow::Result;
 use candle::{Device, Tensor};
 use std::cell::RefCell;
+use tokenizers::Tokenizer;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -84,7 +85,7 @@ impl Config {
 
 struct MoshiModel {
     state: moshi::asr::State,
-    text_tokenizer: sentencepiece::SentencePieceProcessor,
+    text_tokenizer: Tokenizer,
     timestamps: bool,
     vad: bool,
     config: Config,
@@ -106,8 +107,7 @@ impl MoshiModel {
         console_log!("Parsed config successfully");
 
         // Load text tokenizer
-        let text_tokenizer =
-            sentencepiece::SentencePieceProcessor::from_serialized_proto(tokenizer)?;
+        let text_tokenizer = Tokenizer::from_bytes(tokenizer)?;
         console_log!("Loaded text tokenizer");
 
         // Load model weights
