@@ -107,7 +107,7 @@ impl MoshiModel {
         console_log!("Parsed config successfully");
 
         // Load text tokenizer
-        let text_tokenizer = Tokenizer::from_bytes(tokenizer)?;
+        let text_tokenizer = Tokenizer::from_bytes(tokenizer).unwrap();
         console_log!("Loaded text tokenizer");
 
         // Load model weights
@@ -184,7 +184,7 @@ impl MoshiModel {
                     } => {
                         let word = self
                             .text_tokenizer
-                            .decode_piece_ids(tokens)
+                            .decode(&tokens, true)
                             .unwrap_or_else(|_| String::new());
 
                         if self.timestamps {
