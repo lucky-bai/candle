@@ -1,5 +1,4 @@
-//load the candle Whisper decoder wasm module
-import init, { Decoder } from "./build/m.js";
+import init, { MoshiASRDecoder } from "./build/m.js";
 
 async function fetchArrayBuffer(url) {
   const cacheName = "whisper-candle-cache";
@@ -13,23 +12,12 @@ async function fetchArrayBuffer(url) {
   cache.put(url, res.clone());
   return new Uint8Array(await res.arrayBuffer());
 }
-class Whisper {
+class MoshiASR {
   static instance = {};
-  // Retrieve the Whisper model. When called for the first time,
+  // Retrieve the model. When called for the first time,
   // this will load the model and save it for future use.
   static async getInstance(params) {
-    const {
-      weightsURL,
-      modelID,
-      tokenizerURL,
-      mimiURL,
-      configURL,
-      quantized,
-      is_multilingual,
-      timestamps,
-      task,
-      language,
-    } = params;
+    const { weightsURL, modelID, tokenizerURL, mimiURL, configURL } = params;
     // load individual modelID only once
     if (!this.instance[modelID]) {
       await init();
@@ -43,16 +31,11 @@ class Whisper {
           fetchArrayBuffer(configURL),
         ]);
 
-      this.instance[modelID] = new Decoder(
+      this.instance[modelID] = new MoshiASRDecoder(
         weightsArrayU8,
         tokenizerArrayU8,
         mimiArrayU8,
-        configArrayU8,
-        quantized,
-        is_multilingual,
-        timestamps,
-        task,
-        language
+        configArrayU8
       );
     } else {
       self.postMessage({ status: "loading", message: "Model Already Loaded" });
@@ -66,26 +49,12 @@ self.addEventListener("message", async (event) => {
     event.data;
   try {
     self.postMessage({ status: "decoding", message: "Starting Decoder" });
-    let quantized = false;
-    if (modelID.includes("quantized")) {
-      quantized = true;
-    }
-    let is_multilingual = false;
-    if (modelID.includes("multilingual")) {
-      is_multilingual = true;
-    }
-    let timestamps = true;
-    const decoder = await Whisper.getInstance({
+    const decoder = await MoshiASR.getInstance({
       weightsURL,
       modelID,
       tokenizerURL,
       mimiURL,
       configURL,
-      quantized,
-      is_multilingual,
-      timestamps,
-      task: null,
-      language: null,
     });
 
     self.postMessage({ status: "decoding", message: "Loading Audio" });
