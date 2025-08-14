@@ -52,7 +52,3 @@ features = [
   'Response',
   'Performance',
 ]
-
-#[[bin]]
-#name = "stt_standalone"
-#path = "src/stt_standalone.rs"
