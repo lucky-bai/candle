@@ -1,5 +1,5 @@
 use anyhow::Result;
-use candle::{Device, Tensor};
+use candle::{DType, Device, Tensor};
 use std::cell::RefCell;
 use tokenizers::Tokenizer;
 use wasm_bindgen::prelude::*;
@@ -98,7 +98,7 @@ impl MoshiModel {
         config_bytes: &[u8],
         dev: &Device,
     ) -> Result<Self> {
-        let dtype = dev.bf16_default_to_f32();
+        let dtype = DType::FP16;
 
         // Parse config
         let config: Config = serde_json::from_slice(config_bytes)?;
@@ -109,10 +109,10 @@ impl MoshiModel {
         console_log!("Loaded text tokenizer");
 
         // Load model weights
-        let vb_lm = candle_nn::VarBuilder::from_buffered_safetensors(weights.to_vec(), dtype, dev)?;
+        let vb_lm = candle_nn::VarBuilder::from_slice_safetensors(weights, dtype, dev)?;
         console_log!("Loaded model weights");
 
-        let vb_mimi = candle_nn::VarBuilder::from_buffered_safetensors(mimi.to_vec(), dtype, dev)?;
+        let vb_mimi = candle_nn::VarBuilder::from_slice_safetensors(mimi, dtype, dev)?;
         let cfg = moshi::mimi::Config::v0_1(Some(32));
         let audio_tokenizer = moshi::mimi::Mimi::new(cfg, vb_mimi)?;
         console_log!("Loaded audio tokenizer");
