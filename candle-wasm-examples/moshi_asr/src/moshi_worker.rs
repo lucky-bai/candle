@@ -35,7 +35,7 @@ struct Config {
 }
 
 impl Config {
-    fn model_config(&self, vad: bool) -> moshi::lm::Config {
+    fn model_config(&self) -> moshi::lm::Config {
         let lm_cfg = moshi::transformer::Config {
             d_model: self.dim,
             num_heads: self.num_heads,
@@ -60,14 +60,6 @@ impl Config {
             max_seq_len: 4096 * 4,
             shared_cross_attn: false,
         };
-        let extra_heads = if vad {
-            Some(moshi::lm::ExtraHeadsConfig {
-                num_heads: 4,
-                dim: 6,
-            })
-        } else {
-            None
-        };
         moshi::lm::Config {
             transformer: lm_cfg,
             depformer: None,
@@ -76,7 +68,7 @@ impl Config {
             text_out_vocab_size: self.text_card,
             audio_codebooks: self.n_q,
             conditioners: Default::default(),
-            extra_heads,
+            extra_heads: None,
         }
     }
 }
@@ -85,7 +77,6 @@ struct MoshiModel {
     state: moshi::asr::State,
     text_tokenizer: Tokenizer,
     timestamps: bool,
-    vad: bool,
     config: Config,
     dev: Device,
 }
@@ -98,7 +89,7 @@ impl MoshiModel {
         config_bytes: &[u8],
         dev: &Device,
     ) -> Result<Self> {
-        let dtype = DType::F16;
+        let dtype = DType::F32;
 
         // Parse config
         let config: Config = serde_json::from_slice(config_bytes)?;
@@ -109,7 +100,8 @@ impl MoshiModel {
         console_log!("Loaded text tokenizer");
 
         // Load model weights
-        let vb_lm = candle_nn::VarBuilder::from_slice_safetensors(weights, dtype, dev)?;
+        let vb_lm =
+            candle_transformers::quantized_var_builder::VarBuilder::from_gguf_buffer(weights, dev)?;
         console_log!("Loaded model weights");
 
         let vb_mimi = candle_nn::VarBuilder::from_slice_safetensors(mimi, dtype, dev)?;
@@ -119,8 +111,8 @@ impl MoshiModel {
 
         // Create LM model
         let lm = moshi::lm::LmModel::new(
-            &config.model_config(true), // Enable VAD
-            moshi::nn::MaybeQuantizedVarBuilder::Real(vb_lm),
+            &config.model_config(),
+            moshi::nn::MaybeQuantizedVarBuilder::Quantized(vb_lm),
         )?;
         console_log!("Created LM model");
 
@@ -133,7 +125,6 @@ impl MoshiModel {
             config,
             text_tokenizer,
             timestamps: true,
-            vad: true,
             dev: dev.clone(),
         })
     }
@@ -161,11 +152,7 @@ impl MoshiModel {
 
             for asr_msg in asr_msgs.iter() {
                 match asr_msg {
-                    moshi::asr::AsrMsg::Step { prs, .. } => {
-                        if self.vad && prs[2][0] > 0.5 {
-                            console_log!("End of turn detected: pr={}", prs[2][0]);
-                        }
-                    }
+                    moshi::asr::AsrMsg::Step { .. } => {}
                     moshi::asr::AsrMsg::EndWord { stop_time, .. } => {
                         if let Some((word, start_time)) = last_word.take() {
                             console_log!("Word: [{}-{}] {}", start_time, stop_time, word);
