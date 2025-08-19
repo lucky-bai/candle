@@ -98,7 +98,7 @@ impl MoshiModel {
         config_bytes: &[u8],
         dev: &Device,
     ) -> Result<Self> {
-        let dtype = DType::FP16;
+        let dtype = DType::F16;
 
         // Parse config
         let config: Config = serde_json::from_slice(config_bytes)?;
