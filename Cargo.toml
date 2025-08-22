@@ -98,6 +98,11 @@ yoke = { version = "0.7.2", features = ["derive"] }
 zip = { version = "1.1.1", default-features = false }
 metal = { version = "0.27.0", features = ["mps"] }
 
+[patch.crates-io]
+candle-core = { path = "candle-core" }
+candle-nn = { path = "candle-nn" }
+candle-transformers = { path = "candle-transformers" }
+
 [profile.release-with-debug]
 inherits = "release"
 debug = true
